@@ -18,6 +18,14 @@ type MyService3 struct {
 	Num3 int
 }
 
+type IMyService interface {
+	get() *MyService
+}
+
+func (myService *MyService2) get() *MyService {
+	return myService.Obj
+}
+
 var i int = 0
 
 func getIncrement() int {
@@ -39,11 +47,14 @@ func Test_Singleton(t *testing.T) {
 		).
 		Build()
 
-	result1 := services.GetService("MyService").(*MyService)
-	result2 := services.GetService("MyService").(*MyService)
+	// Assert can get an instance of struct, the result2 is the same instance of result1.
+	{
+		result1 := services.GetService("MyService").(*MyService)
+		result2 := services.GetService("MyService").(*MyService)
 
-	if result1.Num == 0 || result1.Num != result2.Num {
-		t.Fail()
+		if result1.Num == 0 || result1.Num != result2.Num {
+			t.Fail()
+		}
 	}
 }
 
@@ -225,13 +236,13 @@ func Test_Error(t *testing.T) {
 
 		result1, err1 := GetServiceOr[MyService](scope)
 
-		if result1.Num != 0 || err1.Error() != "cannot get an instance of the service 'MyService', use pointer instead" {
+		if result1.Num != 0 || err1.Error() != "cannot get a value of the service 'MyService', use pointer instead (eg. use `GetServiceOr[*MyService](s)` instead of `GetServiceOr[MyService](s)`)" {
 			t.Fail()
 		}
 
 		result2, err2 := GetServiceOr[*MyService2](scope)
 
-		if result2 != nil || err2.Error() != "the scoped service 'MyService2' must be a pointer (the factory must return &MyService2{})" {
+		if result2 != nil || err2.Error() != "the scoped service 'MyService2' must be a pointer (the factory must return &MyService2{} or interface)" {
 			t.Fail()
 		}
 
@@ -344,6 +355,30 @@ func Test_References(t *testing.T) {
 		result1.Num3 = 888
 
 		if result1.Num3 == result2.Num3 {
+			t.Fail()
+		}
+	}
+}
+
+func Test_Interfaces(t *testing.T) {
+	// Build Service Provider
+	services := NewServiceProvider().
+		Register(
+			GetTypeOf[IMyService](),
+			ServiceTypeEnum.Singleton,
+			func(s IServiceProvider) (interface{}, error) {
+				var result IMyService
+				result = &MyService2{Obj: &MyService{Num: 111}, Num2: 222}
+				return result, nil
+			},
+		).
+		Build()
+
+	// Assert can get an instance of interface
+	{
+		result1 := GetService[IMyService](services)
+
+		if result1.get().Num != 111 {
 			t.Fail()
 		}
 	}

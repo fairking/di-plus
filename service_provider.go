@@ -70,8 +70,8 @@ func (s ServiceProvider) GetServiceOr(service_name string) (interface{}, error) 
 				return nil, err
 			}
 			v := reflect.ValueOf(inst)
-			if v.Kind() != reflect.Pointer {
-				return nil, fmt.Errorf("the singleton service '%s' must be a pointer (the factory must return &%s{})", service_name, service_name)
+			if v.Kind() != reflect.Pointer && v.Kind() != reflect.Interface {
+				return nil, fmt.Errorf("the singleton service '%s' must be a pointer (the factory must return &%s{} or interface)", service_name, service_name)
 			}
 			d.instance = inst
 		}
@@ -132,10 +132,15 @@ func GetServiceOr[T interface{}](s IServiceProvider) (T, error) {
 		var v T
 		return v, err
 	}
-	// Do not allow instance while the result is a pointer (eg. `GetServiceOr[MyService](s)`)
-	if reflect.TypeOf(result).Kind() == reflect.Pointer && reflect.TypeOf((*T)(nil)).Elem().Kind() != reflect.Pointer {
-		var v T
-		return v, fmt.Errorf("cannot get an instance of the service '%s', use pointer instead", inst_type.Name())
+	// Do not allow value while the result is a pointer (eg. `GetServiceOr[MyService](s)`)
+	if reflect.TypeOf(result).Kind() == reflect.Pointer {
+		t_type := reflect.TypeOf((*T)(nil)).Elem().Kind()
+		if t_type != reflect.Interface && t_type != reflect.Pointer {
+			var v T
+			return v, fmt.Errorf("cannot get a value of the service '%s', use pointer instead (eg. use `GetServiceOr[*%s](s)` instead of `GetServiceOr[%s](s)`)", inst_type.Name(), inst_type.Name(), inst_type.Name())
+		} else {
+			return result.(T), err
+		}
 	} else {
 		return result.(T), err
 	}

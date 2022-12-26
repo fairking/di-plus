@@ -46,8 +46,8 @@ func (s ServiceScope) GetServiceOr(service_name string) (interface{}, error) {
 				return nil, err
 			}
 			v := reflect.ValueOf(inst)
-			if v.Kind() != reflect.Pointer {
-				return nil, fmt.Errorf("the scoped service '%s' must be a pointer (the factory must return &%s{})", service_name, service_name)
+			if v.Kind() != reflect.Pointer && v.Kind() != reflect.Interface {
+				return nil, fmt.Errorf("the scoped service '%s' must be a pointer (the factory must return &%s{} or interface)", service_name, service_name)
 			}
 			d.instance = inst
 		}
