@@ -84,10 +84,12 @@ settings2 := GetService[*MySettingsService](services) // Returns the existing se
     // or
     db2_, err := GetServiceOr[*MyDatabaseService](scope) // Returns the existing database service value
 
-    settings3 := GetService[*MySettingsService](services) // Returns the existing settings value
+    settings4 := GetService[*MySettingsService](services) // Returns the existing settings value
 }
 
 // db and db_ is the same value, but db and db2 are different
+
+// settings, settings2, settings3 and settings4 are the same values withing the entire instance of ServiceProvider (services)
 
 ```
 
